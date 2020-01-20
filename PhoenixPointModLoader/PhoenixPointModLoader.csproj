@@ -34,6 +34,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\GamePackages\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -41,10 +45,17 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\GamePackages\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Logger.cs" />
+    <Compile Include="Mods\EnableConsolePatch.cs" />
+    <Compile Include="Mods\EnableOptionsUIEditingPatch.cs" />
     <Compile Include="IPhoenixPointMod.cs" />
+    <Compile Include="Mods\LoadConsoleCommandsFromAllAssembliesPatch.cs" />
     <Compile Include="ModLoadPriority.cs" />
     <Compile Include="PhoenixPointModLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
