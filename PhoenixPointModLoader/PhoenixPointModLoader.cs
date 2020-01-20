@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Harmony;
+using PhoenixPointModLoader.Mods;
 using static PhoenixPointModLoader.Logger;
 
 namespace PhoenixPointModLoader
@@ -78,10 +79,15 @@ namespace PhoenixPointModLoader
 					try
 					{
 						mod.Initialize();
+						Log("Mod class `{0}` from DLL `{1}` was successfully initialized.",
+							mod.GetType().Name,
+							Path.GetFileName(mod.GetType().Assembly.Location));
 					}
 					catch (Exception e)
 					{
-						Log("Mod class `{0}` from DLL `{1}` failed to initialize.", mod.GetType().Name, mod.GetType().Name);
+						Log("Mod class `{0}` from DLL `{1}` failed to initialize.",
+							mod.GetType().Name,
+							Path.GetFileName(mod.GetType().Assembly.Location));
 						Log(e.ToString());
 					}
 				}
@@ -93,7 +99,8 @@ namespace PhoenixPointModLoader
 			string originalDirectory = Environment.CurrentDirectory;
 			Environment.CurrentDirectory = Path.GetDirectoryName(path);
 			Assembly mod = Assembly.LoadFile(path);
-			List<Type> modClasses = mod.GetTypes().Where(x => typeof(IPhoenixPointMod).IsAssignableFrom(x)).ToList();
+			Type[] allClasses = mod.GetTypes();
+			List<Type> modClasses = allClasses.Where(x => x.GetInterface("IPhoenixPointMod") != null).ToList();
 
 			if (!modClasses.Any())
 			{
@@ -104,13 +111,21 @@ namespace PhoenixPointModLoader
 			var modInstances = new List<IPhoenixPointMod>();
 			foreach (Type modClass in modClasses)
 			{
-				IPhoenixPointMod modInstance = Activator.CreateInstance(modClass) as IPhoenixPointMod;
+				IPhoenixPointMod modInstance = null;
+				try
+				{
+					modInstance = Activator.CreateInstance(modClass) as IPhoenixPointMod;
+				}
+				catch (Exception e)
+				{
+					Log("Error has occurred when instantiating mod class`{0}` in DLL `{1}`.", modClass.Name, Path.GetFileName(path));
+					Log(e.ToString());
+					continue;
+				}
+
 				if (modInstance == null)
 				{
-					Log("Attempted to create instance of class `{0}` but failed when loading DLL `{1}`.",
-						modClass.Name,
-						Path.GetFileName(path));
-					continue;
+					Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason.", modClass.Name, Path.GetFileName(path));
 				}
 
 				modInstances.Add(modInstance);

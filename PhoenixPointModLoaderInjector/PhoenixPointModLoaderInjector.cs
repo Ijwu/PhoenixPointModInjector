@@ -307,21 +307,6 @@ namespace PhoenixPointModloaderInjector
                 var nestedIterator = game.GetType(HOOK_TYPE).NestedTypes.First(x => x.Name.Contains(HOOK_METHOD));
                 hookedMethod = nestedIterator.Methods.First(x => x.Name.Equals("MoveNext"));
             }
-
-            // As of Battletech  v1.1 the Start() iterator method of Battletech.Main has this at the end
-            //
-            //  ...
-            //
-            //      Serializer.PrepareSerializer();
-            //      this.activate.enabled = true;
-            //      yield break;
-            //
-            //  }
-            //
-
-            // We want to inject after the PrepareSerializer call -- so search for that call in the CIL
-
-            // REALITYMACHINA NOTE - equivaalent in PhoenixPoint.Common.Game.PhoenixGame.BootCrt, at least on launch
   
             var targetInstruction = -1;
             WriteLine("This is a debugging line for our count of instructions");
@@ -335,7 +320,7 @@ namespace PhoenixPointModloaderInjector
                 {
                     var methodReference = (MethodReference)instruction.Operand;
                     WriteLine(methodReference.Name);
-                    if (methodReference.Name.Contains("MenuCrt"))
+                    if (methodReference.Name.Contains("IsRunningFromSnapshotInternalNetwork"))
                         targetInstruction = i + 1; // hack - we want to run after that instruction has been fully processed, not in the middle of it.
                 }
 
