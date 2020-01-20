@@ -10,7 +10,22 @@ Place the contents of the .zip file in your `PhoenixPoint\PhoenixPointWin64_Data
 
 Run the game to have it generate the `Mods` folder for the Mod Loader. Place all mod directories/files into this folder.
 
-# Developer Information
+# Contributing
+
+All contributions welcome! I intend to enforce a few base guidelines for the repository:
+
+1. Follow MSFT guidelines on code convention. Assume anything not currently following convention is legacy and will be changed.
+2. All development happens in the `develop` branch (and preferably in feature branches ala Git Flow).
+3. `master` branch is for releases only and may only be PR'd into.
+
+After cloning the repository you will need to put your game assemblies into the `GamePackages` folder. These assemblies are from your `PhoenixPoint/PhoenixPointWin64_Data/Managed` folder. The assemblies that need to be copied are:
+
+* Assembly-CSharp.dll
+* UnityEngine.CoreModule.dll
+
+The PPML relies on types from these assemblies and will not build without these references resolved. I have not included the references in the repository to preserve the copyright integrity of Snapshot Games.
+
+# Mod Developer Information
 
 The mod loader will recursively search the `Mods` directory in order to obtain all DLLs it can find. It will then look for all types implementing the `IPhoenixPointMod` interface.
 
@@ -29,3 +44,7 @@ Once all `IPhoenixPointMod` objects have been instantiated and sorted by `ModLoa
 - [ ] Provide game behavior hooks, if possible.
 - [ ] Provide cache of PP game objects (items, weapons, armor, etc.)
 - [ ] Provide API for custom UI (such as menus, popups, etc.)
+
+# Contact
+
+Find me on the Phoenix Point discord under the username `Ijwu`. Please reach out as needed, however do not expect a guarantee of service.
