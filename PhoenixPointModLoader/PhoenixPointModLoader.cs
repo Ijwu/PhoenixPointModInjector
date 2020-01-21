@@ -58,6 +58,7 @@ namespace PhoenixPointModLoader
 			}
 
 			List<IPhoenixPointMod> allMods = new List<IPhoenixPointMod>();
+			IncludeDefaultMods(allMods);
 			foreach (var dllPath in dllPaths)
 			{
 				if (!IGNORE_FILE_NAMES.Contains(Path.GetFileName(dllPath)))
@@ -65,6 +66,15 @@ namespace PhoenixPointModLoader
 			}
 
 			InitializeMods(allMods);	
+		}
+
+		private static void IncludeDefaultMods(List<IPhoenixPointMod> allMods)
+		{
+			allMods.AddRange(new IPhoenixPointMod[]
+			{
+				new EnableConsoleMod(),
+				new LoadConsoleCommandsFromAllAssembliesMod()
+			});
 		}
 
 		private static void InitializeMods(List<IPhoenixPointMod> allMods)

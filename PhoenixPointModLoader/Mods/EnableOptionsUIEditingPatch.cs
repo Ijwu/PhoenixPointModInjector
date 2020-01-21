@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PhoenixPointModLoader.Mods
 {
 	// TODO
-	public class EnableOptionsUIEditingPatch : IPhoenixPointMod
+	public class EnableOptionsUIEditingMod : IPhoenixPointMod
 	{
 		public ModLoadPriority Priority => throw new NotImplementedException();
 
