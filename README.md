@@ -1,3 +1,4 @@
+[![discord](https://discordapp.com/api/guilds/322630986431201283/widget.png?style=shield)](https://discord.gg/pPhUE9b)
 # Phoenix Point Mod Loader
 
 The Phoenix Point Mod Loader (PPML) may be used to easily patch or alter Phoenix Point (PP) game code. It is based off of the BattleTech Mod Loader (https://github.com/BattletechModders/BattleTechModLoader).
