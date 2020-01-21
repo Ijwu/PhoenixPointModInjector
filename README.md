@@ -39,7 +39,7 @@ Once all `IPhoenixPointMod` objects have been instantiated and sorted by `ModLoa
 - [ ] Allow for more robust mod constructors and inject dependencies. (Use an IoC container for this?)
 - [ ] More robust mod loading settings. (e.g. disable certain mods)
 - [ ] More robust mod metadata. (e.g. game version compatibility, dependencies, etc.)
-- [ ] Incorporate functionality of PPDefModifier with taketwo's blessing.
+- [ ] Incorporate functionality of PPDefModifier with @tracktwo's blessing.
 - [ ] Allow for asset replacement.
 - [ ] Provide config file API for mods.
 - [ ] Provide game behavior hooks, if possible.
