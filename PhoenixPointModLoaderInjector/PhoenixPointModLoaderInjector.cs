@@ -307,26 +307,8 @@ namespace PhoenixPointModloaderInjector
                 var nestedIterator = game.GetType(HOOK_TYPE).NestedTypes.First(x => x.Name.Contains(HOOK_METHOD));
                 hookedMethod = nestedIterator.Methods.First(x => x.Name.Equals("MoveNext"));
             }
-
-            // As of Battletech  v1.1 the Start() iterator method of Battletech.Main has this at the end
-            //
-            //  ...
-            //
-            //      Serializer.PrepareSerializer();
-            //      this.activate.enabled = true;
-            //      yield break;
-            //
-            //  }
-            //
-
-            // We want to inject after the PrepareSerializer call -- so search for that call in the CIL
-
-            // REALITYMACHINA NOTE - equivaalent in PhoenixPoint.Common.Game.PhoenixGame.BootCrt, at least on launch
   
             var targetInstruction = -1;
-            WriteLine("This is a debugging line for our count of instructions");
-
-            WriteLine(hookedMethod.Body.Instructions.Count);
             for (var i = 0; i < hookedMethod.Body.Instructions.Count; i++)
             {
                 var instruction = hookedMethod.Body.Instructions[i];
@@ -334,8 +316,7 @@ namespace PhoenixPointModloaderInjector
                 if (instruction.OpCode.Code.Equals(Code.Call) && instruction.OpCode.OperandType.Equals(OperandType.InlineMethod))
                 {
                     var methodReference = (MethodReference)instruction.Operand;
-                    WriteLine(methodReference.Name);
-                    if (methodReference.Name.Contains("MenuCrt"))
+                    if (methodReference.Name.Contains("IsRunningFromSnapshotInternalNetwork"))
                         targetInstruction = i + 1; // hack - we want to run after that instruction has been fully processed, not in the middle of it.
                 }
 
@@ -343,14 +324,12 @@ namespace PhoenixPointModloaderInjector
             
             if (targetInstruction == -1)
             {
-                WriteLine("This is a debugging line and our target line was not found.");
+                WriteLine("Injector failed to locate hooking point. Are you injecting an unsupported version of the game?");
                 return false;
             }
+
             hookedMethod.Body.GetILProcessor().InsertAfter(hookedMethod.Body.Instructions[targetInstruction],
                 Instruction.Create(OpCodes.Call, game.ImportReference(injectedMethod)));
-
-
-            WriteLine("This is another debugging line. If we've gotten here, we should be fine?");
 
             return true;
         }
