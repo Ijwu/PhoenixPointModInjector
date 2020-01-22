@@ -46,7 +46,7 @@ Once all `IPhoenixPointMod` objects have been instantiated and sorted by `ModLoa
 - [ ] Provide cache of PP game objects (items, weapons, armor, etc.)
 - [ ] Provide API for custom UI (such as menus, popups, etc.)
 - [ ] [Vortex](https://www.nexusmods.com/about/vortex/) integration?
-- [ ] [BepInEx](https://github.com/BepInEx/BepInEx) integratoin? I don't even know if this is a 'thing'
+- [ ] [BepInEx](https://github.com/BepInEx/BepInEx) integration? I don't even know if this is a 'thing'
 
 # Contact
 
