@@ -6,10 +6,17 @@ namespace PhoenixPointModLoader.Config
 {
 	public class JsonConfigProvider : IConfigProvider
 	{
-		public T Read<T>(string relativeFilePath)
+		public string RelativeFilePath { get; }
+
+		public JsonConfigProvider(string relativeFilePath)
 		{
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(relativeFilePath));
-			if (!File.Exists(relativeFilePath))
+			RelativeFilePath = relativeFilePath;
+		}
+
+		public T Read<T>()
+		{
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(RelativeFilePath));
+			if (!File.Exists(RelativeFilePath))
 			{
 				throw new FileNotFoundException($"The config file was not found at path `{absolutePath}`");
 			}
@@ -20,9 +27,9 @@ namespace PhoenixPointModLoader.Config
 			return configObject;
 		}
 
-		public bool Write<T>(T config, string relativeFilePath)
+		public bool Write<T>(T config)
 		{
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(relativeFilePath));
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(RelativeFilePath));
 			string configText = JsonConvert.SerializeObject(config, Formatting.Indented);
 
 			try
