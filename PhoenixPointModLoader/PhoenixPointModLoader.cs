@@ -4,18 +4,20 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Harmony;
+using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Mods;
+using SimpleInjector;
 
 namespace PhoenixPointModLoader
 {
 	public static class PhoenixPointModLoader
 	{
-		private const BindingFlags PUBLIC_STATIC_BINDING_FLAGS = BindingFlags.Public | BindingFlags.Static;
-		private static readonly List<string> IGNORE_FILE_NAMES = new List<string>()
+		private static readonly List<string> IgnoredFiles = new List<string>()
 		{
 			"0Harmony.dll",
 			"PhoenixPointModLoader.dll"
 		};
+		private static Container Container = new Container();
 
 		public static string ModDirectory { get; private set; }
 
@@ -32,6 +34,8 @@ namespace PhoenixPointModLoader
 
 			Logger.InitializeLogging(Path.Combine(ModDirectory, "PPModLoader.log"));
 
+			CompositionRoot.ConfigureContainer(Container);
+
 			IList<IPhoenixPointMod> allMods = RetrieveAllMods();
 			InitializeMods(allMods);
 		}
@@ -43,7 +47,7 @@ namespace PhoenixPointModLoader
 			IncludeDefaultMods(allMods);
 			foreach (var dllPath in dllPaths)
 			{
-				if (!IGNORE_FILE_NAMES.Contains(Path.GetFileName(dllPath)))
+				if (!IgnoredFiles.Contains(Path.GetFileName(dllPath)))
 					allMods.AddRange(LoadDll(dllPath));
 			}
 			return allMods;
@@ -51,7 +55,7 @@ namespace PhoenixPointModLoader
 
 		private static void IncludeDefaultMods(IList<IPhoenixPointMod> allMods)
 		{
-			allMods.Add(new EnableConsoleMod());
+			allMods.Add(Container.GetInstance<EnableConsoleMod>());
 			allMods.Add(new LoadConsoleCommandsFromAllAssembliesMod());
 		}
 
@@ -102,7 +106,7 @@ namespace PhoenixPointModLoader
 				IPhoenixPointMod modInstance = null;
 				try
 				{
-					modInstance = Activator.CreateInstance(modClass) as IPhoenixPointMod;
+					modInstance = Container.GetInstance(modClass) as IPhoenixPointMod;
 				}
 				catch (Exception e)
 				{

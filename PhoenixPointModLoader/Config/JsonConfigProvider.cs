@@ -4,19 +4,20 @@ using Newtonsoft.Json;
 
 namespace PhoenixPointModLoader.Config
 {
-	public class JsonConfigProvider : IConfigProvider
+	public class JsonConfigProvider : IFileConfigProvider
 	{
-		public string RelativeFilePath { get; }
-
-		public JsonConfigProvider(string relativeFilePath)
-		{
-			RelativeFilePath = relativeFilePath;
-		}
+		public string RelativeFilePath { get; set; }
 
 		public T Read<T>()
 		{
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(RelativeFilePath));
-			if (!File.Exists(RelativeFilePath))
+			if (string.IsNullOrEmpty(RelativeFilePath))
+			{
+				throw new InvalidOperationException("A relative file path to the `Mods` folder must be provided. " +
+					"Try setting the `RelativeFilePath` property first.");
+			}
+
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, RelativeFilePath);
+			if (!File.Exists(absolutePath))
 			{
 				throw new FileNotFoundException($"The config file was not found at path `{absolutePath}`");
 			}
@@ -29,7 +30,13 @@ namespace PhoenixPointModLoader.Config
 
 		public bool Write<T>(T config)
 		{
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, Path.GetDirectoryName(RelativeFilePath));
+			if (string.IsNullOrEmpty(RelativeFilePath))
+			{
+				throw new InvalidOperationException("A relative file path to the `Mods` folder must be provided. " +
+					"Try setting the `RelativeFilePath` property first.");
+			}
+
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, RelativeFilePath);
 			string configText = JsonConvert.SerializeObject(config, Formatting.Indented);
 
 			try
