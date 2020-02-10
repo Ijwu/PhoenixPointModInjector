@@ -5,16 +5,22 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace PhoenixPointModLoader.Mods
 {
-	[HarmonyPatch(typeof(ConsoleCommandAttribute)), HarmonyPatch("LoadCommands")]
 	public class LoadConsoleCommandsFromAllAssembliesMod : IPhoenixPointMod
 	{
 		public ModLoadPriority Priority => ModLoadPriority.Low;
 
 		public void Initialize()
 		{
+			var harmonyInstance = HarmonyInstance.Create("io.github.ijwu.ppml");
+			var target = typeof(ConsoleCommandAttribute).GetMethod("LoadCommands");
+			var postfix = new HarmonyMethod(this.GetType().GetMethod("Postfix", BindingFlags.Static | BindingFlags.NonPublic));
+			harmonyInstance.Patch(target, postfix: postfix);
+
+			ConsoleCommandAttribute.LoadCommands();
 		}
 
 		[SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Used by Harmony.")]
@@ -44,6 +50,8 @@ namespace PhoenixPointModLoader.Mods
 				{
 					continue;
 				}
+
+				Debug.Log($"Successfully loaded command `{item.Name}` from assembly `{item.MethodInfo.DeclaringType.Assembly.FullName}`.");
 
 				SetMethodInfo(item.Attribute, item.MethodInfo);
 				___CommandToInfo[item.Name] = item.Attribute;
