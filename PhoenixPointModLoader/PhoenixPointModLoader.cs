@@ -4,83 +4,101 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Harmony;
-using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Mods;
-using SimpleInjector;
+using static PhoenixPointModLoader.Logger;
 
 namespace PhoenixPointModLoader
 {
 	public static class PhoenixPointModLoader
 	{
-		private static readonly List<string> IgnoredFiles = new List<string>()
+		private const BindingFlags PUBLIC_STATIC_BINDING_FLAGS = BindingFlags.Public | BindingFlags.Static;
+		private static readonly List<string> IGNORE_FILE_NAMES = new List<string>()
 		{
 			"0Harmony.dll",
 			"PhoenixPointModLoader.dll"
 		};
-		private static Container Container = new Container();
 
 		public static string ModDirectory { get; private set; }
+
+	
 
 		public static void Initialize()
 		{
 			string manifestDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-				?? throw new InvalidOperationException("Could not determine operating directory. Is your folder structure correct? " +
-				"Try verifying game files in the Epic Games Launcher, if you're using it.");
+				?? throw new InvalidOperationException("Manifest path is invalid.");
 
-			ModDirectory = Path.GetFullPath(Path.Combine(manifestDirectory, Path.Combine(@"..\..\Mods")));
+
+			// this should be (wherever Phoenix Point is Installed)\PhoenixPoint\PhoenixPointWin64_Data\Managed
+			ModDirectory = Path.GetFullPath(
+				Path.Combine(manifestDirectory, Path.Combine(@"..\..\Mods")));
+
+			LogPath = Path.Combine(ModDirectory, "PPModLoader.log");
+
+			Version PPMLVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
 			if (!Directory.Exists(ModDirectory))
 				Directory.CreateDirectory(ModDirectory);
 
-			Logger.InitializeLogging(Path.Combine(ModDirectory, "PPModLoader.log"));
+			// create log file, overwriting if it's already there
+			using (var logWriter = File.CreateText(LogPath))
+			{
+				logWriter.WriteLine($"PPModLoader -- PPML v{PPMLVersion} -- {DateTime.Now}");
+			}
 
-			CompositionRoot.ConfigureContainer(Container);
+			// ReSharper disable once UnusedVariable
+			var harmony = HarmonyInstance.Create("io.github.realitymachina.PPModLoader");
 
-			IList<IPhoenixPointMod> allMods = RetrieveAllMods();
-			InitializeMods(allMods);
-		}
-
-		private static IList<IPhoenixPointMod> RetrieveAllMods()
-		{
+			// get all dll paths
 			List<string> dllPaths = Directory.GetFiles(ModDirectory, "*.dll", SearchOption.AllDirectories).ToList();
+
+			if (!dllPaths.Any())
+			{
+				Log(@"No .DLLs loaded. DLLs must be placed in the root of the folder \PhoenixPoint\Mods\.");
+				return;
+			}
+
 			List<IPhoenixPointMod> allMods = new List<IPhoenixPointMod>();
 			IncludeDefaultMods(allMods);
 			foreach (var dllPath in dllPaths)
 			{
-				if (!IgnoredFiles.Contains(Path.GetFileName(dllPath)))
+				if (!IGNORE_FILE_NAMES.Contains(Path.GetFileName(dllPath)))
 					allMods.AddRange(LoadDll(dllPath));
 			}
-			return allMods;
+
+			InitializeMods(allMods);	
 		}
 
-		private static void IncludeDefaultMods(IList<IPhoenixPointMod> allMods)
+		private static void IncludeDefaultMods(List<IPhoenixPointMod> allMods)
 		{
-			allMods.Add(Container.GetInstance<EnableConsoleMod>());
-			allMods.Add(new LoadConsoleCommandsFromAllAssembliesMod());
+			allMods.AddRange(new IPhoenixPointMod[]
+			{
+				new EnableConsoleMod(),
+				new LoadConsoleCommandsFromAllAssembliesMod()
+			});
 		}
 
-		private static void InitializeMods(IList<IPhoenixPointMod> allMods)
+		private static void InitializeMods(List<IPhoenixPointMod> allMods)
 		{
 			var prioritizedModList = allMods.ToLookup(x => x.Priority);
 			ModLoadPriority[] loadOrder = new[] { ModLoadPriority.High, ModLoadPriority.Normal, ModLoadPriority.Low };
 			foreach (ModLoadPriority priority in loadOrder)
 			{
-				Logger.Log("Attempting to initialize `{0}` priority mods.", priority.ToString());
+				Log("Attempting to initialize `{0}` priority mods.", priority.ToString());
 				foreach (var mod in prioritizedModList[priority])
 				{
 					try
 					{
 						mod.Initialize();
-						Logger.Log("Mod class `{0}` from DLL `{1}` was successfully initialized.",
+						Log("Mod class `{0}` from DLL `{1}` was successfully initialized.",
 							mod.GetType().Name,
 							Path.GetFileName(mod.GetType().Assembly.Location));
 					}
 					catch (Exception e)
 					{
-						Logger.Log("Mod class `{0}` from DLL `{1}` failed to initialize.",
+						Log("Mod class `{0}` from DLL `{1}` failed to initialize.",
 							mod.GetType().Name,
 							Path.GetFileName(mod.GetType().Assembly.Location));
-						Logger.Log(e.ToString());
+						Log(e.ToString());
 					}
 				}
 			}
@@ -96,7 +114,7 @@ namespace PhoenixPointModLoader
 
 			if (!modClasses.Any())
 			{
-				Logger.Log("No mod classes found in DLL: {0}", Path.GetFileName(path));
+				Log("No mod classes found in DLL: {0}", Path.GetFileName(path));
 				return new List<IPhoenixPointMod>();
 			}
 
@@ -106,19 +124,18 @@ namespace PhoenixPointModLoader
 				IPhoenixPointMod modInstance = null;
 				try
 				{
-					modInstance = Container.GetInstance(modClass) as IPhoenixPointMod;
+					modInstance = Activator.CreateInstance(modClass) as IPhoenixPointMod;
 				}
 				catch (Exception e)
 				{
-					Logger.Log("Error has occurred when instantiating mod class`{0}` in DLL `{1}`.", modClass.Name, Path.GetFileName(path));
-					Logger.Log(e.ToString());
+					Log("Error has occurred when instantiating mod class`{0}` in DLL `{1}`.", modClass.Name, Path.GetFileName(path));
+					Log(e.ToString());
 					continue;
 				}
 
 				if (modInstance == null)
 				{
-					Logger.Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason. " +
-						"Please ensure you have a default constructor defined for your type.", modClass.Name, Path.GetFileName(path));
+					Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason.", modClass.Name, Path.GetFileName(path));
 				}
 
 				modInstances.Add(modInstance);
