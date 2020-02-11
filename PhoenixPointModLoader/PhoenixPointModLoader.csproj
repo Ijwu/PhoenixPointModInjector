@@ -55,8 +55,10 @@
   <ItemGroup>
     <Compile Include="Config\IFileConfigProvider.cs" />
     <Compile Include="Config\JsonConfigProvider.cs" />
+    <Compile Include="Dependencies\ModMetadata.cs" />
     <Compile Include="Infrastructure\CompositionRoot.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="ModManager.cs" />
     <Compile Include="Mods\EnableConsoleMod.cs" />
     <Compile Include="Mods\EnableOptionsUIEditingPatch.cs" />
     <Compile Include="IPhoenixPointMod.cs" />
