@@ -1,5 +1,6 @@
 ﻿using Base.Utils.GameConsole;
 using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Manager;
 using System.IO;
 
 namespace PhoenixPointModLoader.Mods

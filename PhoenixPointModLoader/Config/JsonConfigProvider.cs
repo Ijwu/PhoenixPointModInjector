@@ -16,7 +16,7 @@ namespace PhoenixPointModLoader.Config
 					"Try setting the `RelativeFilePath` property first.");
 			}
 
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, RelativeFilePath);
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModsDirectory, RelativeFilePath);
 			if (!File.Exists(absolutePath))
 			{
 				throw new FileNotFoundException($"The config file was not found at path `{absolutePath}`");
@@ -36,7 +36,7 @@ namespace PhoenixPointModLoader.Config
 					"Try setting the `RelativeFilePath` property first.");
 			}
 
-			string absolutePath = Path.Combine(PhoenixPointModLoader.ModDirectory, RelativeFilePath);
+			string absolutePath = Path.Combine(PhoenixPointModLoader.ModsDirectory, RelativeFilePath);
 			string configText = JsonConvert.SerializeObject(config, Formatting.Indented);
 
 			try

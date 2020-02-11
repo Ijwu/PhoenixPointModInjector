@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using Harmony;
-using PhoenixPointModLoader.Infrastructure;
-using PhoenixPointModLoader.Mods;
-using SimpleInjector;
+using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Manager;
 
 namespace PhoenixPointModLoader
 {
@@ -14,13 +10,13 @@ namespace PhoenixPointModLoader
 	{
 		private static ModManager ModManager;
 
-		public static string ModDirectory { get; private set; }
+		public static string ModsDirectory { get; private set; }
 
 		public static void Initialize()
 		{
 			EnsureFolderSetup();
-			Logger.InitializeLogging(Path.Combine(ModDirectory, "PPModLoader.log"));
-			ModManager = new ModManager(ModDirectory);
+			Logger.InitializeLogging(Path.Combine(ModsDirectory, "PPModLoader.log"));
+			ModManager = new ModManager(ModsDirectory, new JsonConfigProvider());
 			ModManager.Initialize();
 		}
 
@@ -30,11 +26,11 @@ namespace PhoenixPointModLoader
 				?? throw new InvalidOperationException("Could not determine operating directory. Is your folder structure correct? " +
 				"Try verifying game files in the Epic Games Launcher, if you're using it.");
 
-			ModDirectory = Path.GetFullPath(Path.Combine(manifestDirectory, Path.Combine(@"..\..\Mods")));
+			ModsDirectory = Path.GetFullPath(Path.Combine(manifestDirectory, Path.Combine(@"..\..\Mods")));
 
-			if (!Directory.Exists(ModDirectory))
+			if (!Directory.Exists(ModsDirectory))
 			{
-				Directory.CreateDirectory(ModDirectory);
+				Directory.CreateDirectory(ModsDirectory);
 			}
 		}
 	}

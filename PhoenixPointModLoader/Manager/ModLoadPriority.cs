@@ -1,4 +1,4 @@
-﻿namespace PhoenixPointModLoader
+﻿namespace PhoenixPointModLoader.Manager
 {
 	public enum ModLoadPriority
 	{
