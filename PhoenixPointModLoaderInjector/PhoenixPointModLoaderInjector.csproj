@@ -36,7 +36,7 @@
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\GamePackages\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\GamePackages\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
