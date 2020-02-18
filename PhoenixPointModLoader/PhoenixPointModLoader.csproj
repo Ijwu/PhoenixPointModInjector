@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Config\IFileConfigProvider.cs" />
     <Compile Include="Config\JsonConfigProvider.cs" />
+    <Compile Include="Manager\ModCircularDependencyException.cs" />
     <Compile Include="Manager\ModMetadata.cs" />
     <Compile Include="Infrastructure\CompositionRoot.cs" />
     <Compile Include="Logger.cs" />
