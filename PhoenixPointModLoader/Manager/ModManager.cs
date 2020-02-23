@@ -1,4 +1,5 @@
-﻿using PhoenixPointModLoader.Config;
+﻿using Newtonsoft.Json;
+using PhoenixPointModLoader.Config;
 using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Mods;
 using SimpleInjector;
@@ -28,7 +29,34 @@ namespace PhoenixPointModLoader.Manager
 			_container = CompositionRoot.GetContainer();
 
 			IList<ModEntry> allMods = RetrieveAllMods();
-			InitializeMods(allMods);
+			IList<ModEntry> dependencyResolvedModList = SolveForDependencies(allMods);
+			InitializeMods(dependencyResolvedModList);
+		}
+
+		private IList<ModEntry> SolveForDependencies(IList<ModEntry> allMods)
+		{
+			Logger.Log("Attempting to resolve mod dependencies...");
+			List<ModEntry> resolvedModsList = new List<ModEntry>(allMods);
+			List<ModEntry> toBeRemoved = new List<ModEntry>();
+			foreach (ModEntry mod in allMods)
+			{
+				try
+				{
+					bool resolved = mod.ModMetadata.TryResolveDependencies(allMods.Select(x =>x.ModMetadata).ToList());
+					if (!resolved)
+					{
+						LogFailedDependencyResolution(mod);
+						toBeRemoved.Add(mod);
+					}
+				}
+				catch (ModCircularDependencyException)
+				{
+					LogCircularDependency(mod);
+					toBeRemoved.Add(mod);
+				}
+			}
+			resolvedModsList.RemoveAll((x) => toBeRemoved.Contains(x));
+			return resolvedModsList;
 		}
 
 		private IList<ModEntry> RetrieveAllMods()
@@ -173,6 +201,18 @@ namespace PhoenixPointModLoader.Manager
 			Logger.Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason.",
 					   modClass.Name,
 					   Path.GetFileName(path));
+		}
+
+		private void LogFailedDependencyResolution(ModEntry mod)
+		{
+			Logger.Log($"Failed to resolve dependencies for mod `{mod.ModMetadata.Name}`.");
+			Logger.Log($"Dependencies for mod `{mod.ModMetadata.Name}`: `{string.Join(", ", mod.ModMetadata.Dependencies.Select(x => x.Name))}`.");
+		}
+
+		private void LogCircularDependency(ModEntry mod)
+		{
+			Logger.Log($"Could not load mod `{mod.ModMetadata.Name}` due to circular dependencies. " +
+				$"Please check your metadata definitions for mods which might mutually depend on one another.");
 		}
 	}
 }

@@ -23,14 +23,27 @@ namespace PhoenixPointModLoader.Manager
 
 		public IList<ModMetadata> Dependencies { get; }
 
-		public bool TryResolveDependencies(IEnumerable<ModMetadata> loadedMods)
+		public bool TryResolveDependencies(IList<ModMetadata> modList)
 		{
 			List<ModMetadata> resolvedMods = new List<ModMetadata>();
-			List<ModMetadata> unresolvedMods = new List<ModMetadata>() { this };
+			List<ModMetadata> unresolvedMods = new List<ModMetadata>();
 
 			bool ResolveDependenciesForMod(ModMetadata mod)
 			{
-				foreach (ModMetadata dependency in Dependencies)
+				bool result = false;
+
+				if (!modList.Contains(mod))
+				{
+					return result;
+				}
+
+				if (mod.Dependencies.Count == 0)
+				{
+					result = true;
+				}
+
+				unresolvedMods.Add(mod);
+				foreach (ModMetadata dependency in mod.Dependencies)
 				{
 					if (!resolvedMods.Contains(dependency))
 					{
@@ -38,12 +51,16 @@ namespace PhoenixPointModLoader.Manager
 						{
 							throw new ModCircularDependencyException(this, dependency);
 						}
-						ResolveDependenciesForMod(dependency);
+						result = ResolveDependenciesForMod(dependency);
+					}
+					else
+					{
+						result = true;
 					}
 				}
 				resolvedMods.Add(mod);
 				unresolvedMods.Remove(mod);
-				return true;
+				return result;
 			}
 
 			return ResolveDependenciesForMod(this);
