@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Harmony;
 using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Mods;
 using SimpleInjector;
@@ -24,8 +23,8 @@ namespace PhoenixPointModLoader
 		public static void Initialize()
 		{
 			string manifestDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-				?? throw new InvalidOperationException("Could not determine operating directory. Is your folder structure correct? " +
-				"Try verifying game files in the Epic Games Launcher, if you're using it.");
+			?? throw new InvalidOperationException("Could not determine operating directory. Is your folder structure correct? " +
+			"Try verifying game files in the Epic Games Launcher, if you're using it.");
 
 			ModDirectory = Path.GetFullPath(Path.Combine(manifestDirectory, Path.Combine(@"..\..\Mods")));
 
@@ -68,18 +67,18 @@ namespace PhoenixPointModLoader
 				Logger.Log("Attempting to initialize `{0}` priority mods.", priority.ToString());
 				foreach (var mod in prioritizedModList[priority])
 				{
+					LegacyPhoenixPointMod legacyMod = mod as LegacyPhoenixPointMod;
+					Type modType = legacyMod != null ? legacyMod.getModClass() : mod.GetType();
 					try
 					{
 						mod.Initialize();
 						Logger.Log("Mod class `{0}` from DLL `{1}` was successfully initialized.",
-							mod.GetType().Name,
-							Path.GetFileName(mod.GetType().Assembly.Location));
+							modType.Name, Path.GetFileName(modType.Assembly.Location));
 					}
 					catch (Exception e)
 					{
 						Logger.Log("Mod class `{0}` from DLL `{1}` failed to initialize.",
-							mod.GetType().Name,
-							Path.GetFileName(mod.GetType().Assembly.Location));
+							modType.Name, Path.GetFileName(modType.Assembly.Location));
 						Logger.Log(e.ToString());
 					}
 				}
@@ -92,36 +91,46 @@ namespace PhoenixPointModLoader
 			Environment.CurrentDirectory = Path.GetDirectoryName(path);
 			Assembly mod = Assembly.LoadFile(path);
 			Type[] allClasses = mod.GetTypes();
-			List<Type> modClasses = allClasses.Where(x => x.GetInterface("IPhoenixPointMod") != null).ToList();
-
-			if (!modClasses.Any())
-			{
-				Logger.Log("No mod classes found in DLL: {0}", Path.GetFileName(path));
-				return new List<IPhoenixPointMod>();
-			}
 
 			var modInstances = new List<IPhoenixPointMod>();
-			foreach (Type modClass in modClasses)
+			foreach (Type modClass in allClasses)
 			{
-				IPhoenixPointMod modInstance = null;
-				try
+				if (modClass.GetInterface("IPhoenixPointMod") != null)
 				{
-					modInstance = Container.GetInstance(modClass) as IPhoenixPointMod;
-				}
-				catch (Exception e)
-				{
-					Logger.Log("Error has occurred when instantiating mod class`{0}` in DLL `{1}`.", modClass.Name, Path.GetFileName(path));
-					Logger.Log(e.ToString());
-					continue;
-				}
+					IPhoenixPointMod modInstance = null;
+					try
+					{
+						modInstance = Container.GetInstance(modClass) as IPhoenixPointMod;
+					}
+					catch (Exception e)
+					{
+						Logger.Log("Error has occurred when instantiating mod class`{0}` in DLL `{1}`.", modClass.Name, Path.GetFileName(path));
+						Logger.Log(e.ToString());
+						continue;
+					}
 
-				if (modInstance == null)
-				{
-					Logger.Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason. " +
-						"Please ensure you have a default constructor defined for your type.", modClass.Name, Path.GetFileName(path));
+					if (modInstance != null)
+					{
+						modInstances.Add(modInstance);
+					}
+					else
+					{
+						Logger.Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason. " +
+							"Please ensure you have a default constructor defined for your type.", modClass.Name, Path.GetFileName(path));
+					}
 				}
-
-				modInstances.Add(modInstance);
+				else
+				{
+					MethodInfo initMethod = modClass.GetMethod("Init", BindingFlags.Public | BindingFlags.Static);
+					if (initMethod != null)
+					{
+						modInstances.Add(new LegacyPhoenixPointMod(modClass, initMethod));
+					}
+				}
+			}
+			if (!modInstances.Any())
+			{
+				Logger.Log("No mod classes found in DLL: {0}", Path.GetFileName(path));
 			}
 			Environment.CurrentDirectory = originalDirectory;
 			return modInstances;
