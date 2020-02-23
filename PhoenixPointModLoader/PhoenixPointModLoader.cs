@@ -68,7 +68,7 @@ namespace PhoenixPointModLoader
 				foreach (var mod in prioritizedModList[priority])
 				{
 					LegacyPhoenixPointMod legacyMod = mod as LegacyPhoenixPointMod;
-					Type modType = legacyMod != null ? legacyMod.getModClass() : mod.GetType();
+					Type modType = legacyMod != null ? legacyMod.ModClass : mod.GetType();
 					try
 					{
 						mod.Initialize();
@@ -97,7 +97,7 @@ namespace PhoenixPointModLoader
 			{
 				if (modClass.GetInterface("IPhoenixPointMod") != null)
 				{
-					IPhoenixPointMod modInstance = null;
+					IPhoenixPointMod modInstance;
 					try
 					{
 						modInstance = Container.GetInstance(modClass) as IPhoenixPointMod;
