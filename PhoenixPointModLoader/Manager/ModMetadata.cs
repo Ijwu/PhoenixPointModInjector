@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PhoenixPointModLoader.Manager
 {
@@ -34,20 +35,20 @@ namespace PhoenixPointModLoader.Manager
 
 				if (!modList.Contains(mod))
 				{
-					return result;
+					return false;
 				}
 
 				if (mod.Dependencies.Count == 0)
 				{
-					result = true;
+					return true;
 				}
 
 				unresolvedMods.Add(mod);
 				foreach (ModMetadata dependency in mod.Dependencies)
 				{
-					if (!resolvedMods.Contains(dependency))
+					if (!resolvedMods.Any(resolved => resolved.Name == dependency.Name && resolved.Version == dependency.Version))
 					{
-						if (unresolvedMods.Contains(dependency))
+						if (unresolvedMods.Any(unresolved => unresolved.Name == dependency.Name && unresolved.Version == dependency.Version))
 						{
 							throw new ModCircularDependencyException(this, dependency);
 						}
