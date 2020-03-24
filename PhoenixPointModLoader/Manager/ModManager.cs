@@ -57,7 +57,7 @@ namespace PhoenixPointModLoader.Manager
 				ModMetadata metadata = _metadataProvider.Read<ModMetadata>(Path.Combine(mod.Assembly.Location, $"{mod.Name}.json"));
 				if (metadata is null)
 				{
-					metadata = new ModMetadata(mod.Name);
+					metadata = new ModMetadata(mod.Name, new Version(0,0));
 				}
 				result.Add(new ModEntry(mod, metadata));
 			}
