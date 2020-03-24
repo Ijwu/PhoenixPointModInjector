@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
-using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Config
 using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Manager;
 
