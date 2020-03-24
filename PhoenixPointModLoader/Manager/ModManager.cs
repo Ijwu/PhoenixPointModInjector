@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Exceptions;
 using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Mods;
 using SimpleInjector;
@@ -15,204 +16,98 @@ namespace PhoenixPointModLoader.Manager
 	{
 		private Container _container;
 		private IFileConfigProvider _metadataProvider;
+		private FileSystemModLoader _modLoader;
 
 		public string ModsDirectory { get; }
+		public IList<ModEntry> Mods { get; private set; }
 
-		public ModManager(string modsDirectory, IFileConfigProvider metadataProvider)
+		public ModManager(string modsDirectory, IFileConfigProvider metadataProvider, FileSystemModLoader modLoader, Container container)
 		{
 			ModsDirectory = modsDirectory;
 			_metadataProvider = metadataProvider;
+			_modLoader = modLoader;
+			_container = container;
 		}
 
 		public void Initialize()
 		{
-			_container = CompositionRoot.GetContainer();
-
-			IList<ModEntry> allMods = RetrieveAllMods();
-			IList<ModEntry> dependencyResolvedModList = SolveForDependencies(allMods);
-			InitializeMods(dependencyResolvedModList);
+			IList<Type> mods = _modLoader.LoadModTypesFromDirectory(ModsDirectory);
+			IList<ModEntry> modsWithMetadata = LoadMetadataForModTypes(mods);
+			IList<ModEntry> modsWithResolvedDependencies = ResolveDependencies(modsWithMetadata);
+			Mods = InstantiateMods(modsWithResolvedDependencies);
+			AddDefaultModEntries(Mods);
+			foreach (ModEntry mod in Mods)
+			{
+				mod.ModInstance.Initialize();
+				Logger.Log($"Successfully initialized mod `{mod.ModMetadata.Name} (v{mod.ModMetadata.Version})`.");
+			}
 		}
 
-		private IList<ModEntry> SolveForDependencies(IList<ModEntry> allMods)
+		private void AddDefaultModEntries(IList<ModEntry> mods)
 		{
-			Logger.Log("Attempting to resolve mod dependencies...");
-			List<ModEntry> resolvedModsList = new List<ModEntry>(allMods);
-			List<ModEntry> toBeRemoved = new List<ModEntry>();
-			foreach (ModEntry mod in allMods)
+			mods.Add(new ModEntry(new EnableConsoleMod(_metadataProvider), null, new ModMetadata("Enable Console", new Version(1,0), null)));
+			mods.Add(new ModEntry(new LoadConsoleCommandsFromAllAssembliesMod(), null, new ModMetadata("Load Mod Commands", new Version(1, 0), null)));
+		}
+
+		private IList<ModEntry> LoadMetadataForModTypes(IList<Type> mods)
+		{
+			var result = new List<ModEntry>();
+			foreach (Type mod in mods)
+			{
+				ModMetadata metadata = _metadataProvider.Read<ModMetadata>(Path.Combine(mod.Assembly.Location, $"{mod.Name}.json"));
+				if (metadata is null)
+				{
+					metadata = new ModMetadata(mod.Name);
+				}
+				result.Add(new ModEntry(mod, metadata));
+			}
+			return result;
+		}
+
+		private IList<ModEntry> ResolveDependencies(IList<ModEntry> modsWithMetadata)
+		{
+			List<ModEntry> successfullyResolved = new List<ModEntry>();
+			var dependencyResolutionList = modsWithMetadata.OrderBy(entry => entry.ModMetadata.Dependencies.Count);
+			foreach (ModEntry entry in dependencyResolutionList)
+			{
+				IList<ModMetadata> currentlyResolved = successfullyResolved.Select(x => x.ModMetadata).ToList();
+				bool resolved = entry.ModMetadata.TryResolveDependencies(currentlyResolved);
+				if (resolved)
+				{
+					successfullyResolved.Add(entry);
+				}
+				else
+				{
+					var dependenciesString = string.Join(", ", entry.ModMetadata.Dependencies.Select(x => $"{x.Name} (v{x.Version})"));
+					Logger.Log($"Failed to resolve dependencies for mod `{entry.ModType.FullName}`.");
+					Logger.Log($"Mod dependencies are as follows: {dependenciesString}");
+				}
+			}
+			return successfullyResolved;
+		}
+
+		private IList<ModEntry> InstantiateMods(IList<ModEntry> modEntries)
+		{
+			var instantiatedEntries = new List<ModEntry>();
+			foreach (ModEntry entry in modEntries)
 			{
 				try
 				{
-					bool resolved = mod.ModMetadata.TryResolveDependencies(allMods.Select(x =>x.ModMetadata).ToList());
-					if (!resolved)
+					IPhoenixPointMod modInstance = _container.GetInstance(entry.ModType) as IPhoenixPointMod;
+					if (modInstance == null)
 					{
-						LogFailedDependencyResolution(mod);
-						toBeRemoved.Add(mod);
+						throw new ModLoadFailureException($"Mod `{entry.ModType.FullName}` failed to initialize for unknown reason.");
 					}
-				}
-				catch (ModCircularDependencyException)
-				{
-					LogCircularDependency(mod);
-					toBeRemoved.Add(mod);
-				}
-			}
-			resolvedModsList.RemoveAll((x) => toBeRemoved.Contains(x));
-			return resolvedModsList;
-		}
 
-		private IList<ModEntry> RetrieveAllMods()
-		{
-			List<string> dllPaths = Directory.GetFiles(ModsDirectory, "*.dll", SearchOption.AllDirectories).ToList();
-			List<ModEntry> allMods = new List<ModEntry>();
-			IncludeDefaultMods(allMods);
-			foreach (var dllPath in dllPaths)
-			{
-				allMods.AddRange(LoadDll(dllPath));
-			}
-			return allMods;
-		}
-
-		private void IncludeDefaultMods(IList<ModEntry> allMods)
-		{
-			allMods.Add(new ModEntry(
-					_container.GetInstance<EnableConsoleMod>(),
-					new ModMetadata("Enable Console", new Version(1, 0, 0, 0), "Turns on the in-game console.")
-				));
-			allMods.Add(new ModEntry(
-					_container.GetInstance<LoadConsoleCommandsFromAllAssembliesMod>(),
-					new ModMetadata("Load Console Commands", new Version(1, 0, 0, 0), "Enables mods to provide console commands.")
-				));
-		}
-
-		private void InitializeMods(IList<ModEntry> allMods)
-		{
-			ModLoadPriority[] loadOrder = new[] { ModLoadPriority.High, ModLoadPriority.Normal, ModLoadPriority.Low };
-
-			var prioritizedModList = allMods.ToLookup(x => x.ModInstance.Priority);
-
-			foreach (ModLoadPriority priority in loadOrder)
-			{
-				Logger.Log("Attempting to initialize `{0}` priority mods.", priority.ToString());
-				foreach (var mod in prioritizedModList[priority])
-				{
-					try
-					{
-						mod.ModInstance.Initialize();
-						LogModLoaded(mod.ModInstance.GetType());
-					}
-					catch (Exception e)
-					{
-						LogModLoadFailure(mod.ModInstance.GetType(), e);
-					}
-				}
-			}
-		}
-
-		private IList<ModEntry> LoadDll(string path)
-		{
-			string originalDirectory = Environment.CurrentDirectory;
-			Environment.CurrentDirectory = Path.GetDirectoryName(path);
-
-			IList<Type> modClasses = GetModClasses(path);
-
-			if (!modClasses.Any())
-			{
-				Logger.Log("No mod classes found in DLL: {0}", Path.GetFileName(path));
-				return new List<ModEntry>();
-			}
-
-			var modInstances = new List<ModEntry>();
-			foreach (Type modClass in modClasses)
-			{
-				ModMetadata modMetadata;
-				IPhoenixPointMod modInstance;
-				try
-				{
-					modInstance = _container.GetInstance(modClass) as IPhoenixPointMod;
-					if (!TryLoadMetadata(modClass.Name, out modMetadata))
-					{
-						modMetadata = new ModMetadata(modClass.Name);
-						LogMissingMetadata(modClass);
-					}
+					instantiatedEntries.Add(new ModEntry(modInstance, entry.ModType, entry.ModMetadata));		
 				}
 				catch (Exception e)
 				{
-					LogModLoadFailure(modClass, e);
+					Logger.Log(e.Message);
 					continue;
 				}
-
-				if (modInstance == null)
-				{
-					LogNullInstance(path, modClass);
-					continue;
-				}
-
-				modInstances.Add(new ModEntry(modInstance, modMetadata));
 			}
-			Environment.CurrentDirectory = originalDirectory;
-			return modInstances;
-		}
-
-		private bool TryLoadMetadata(string modName, out ModMetadata metadata)
-		{
-			_metadataProvider.RelativeFilePath = $"{modName}.mod";
-			try
-			{
-				metadata = _metadataProvider.Read<ModMetadata>();
-				return true;
-			}
-			catch (FileNotFoundException)
-			{
-				metadata = null;
-				return false;
-			}
-		}
-
-		private static IList<Type> GetModClasses(string path)
-		{
-			Assembly modssembly = Assembly.LoadFile(path);
-			Type[] allClasses = modssembly.GetTypes();
-			return allClasses.Where(x => x.GetInterface("IPhoenixPointMod") != null).ToList();
-		}
-
-		private static void LogModLoadFailure(Type modType, Exception e)
-		{
-			Logger.Log("Mod class `{0}` from DLL `{1}` failed to initialize.",
-										modType.Name,
-										Path.GetFileName(modType.Assembly.Location));
-			Logger.Log(e.ToString());
-		}
-
-		private static void LogModLoaded(Type modType)
-		{
-			Logger.Log("Mod class `{0}` from DLL `{1}` was successfully initialized.",
-										modType.Name,
-										Path.GetFileName(modType.Assembly.Location));
-		}
-
-		private static void LogMissingMetadata(Type modClass)
-		{
-			Logger.Log($"Could not find mod metadata file for mod `{modClass.Name}`. " +
-										"Assuming default metadata which may cause unintended behavior. " +
-										"Please ship your mods with a metadata file to prevent this.");
-		}
-
-		private static void LogNullInstance(string path, Type modClass)
-		{
-			Logger.Log("Instantiated mod class `{0}` from DLL `{1}` was null for unknown reason.",
-					   modClass.Name,
-					   Path.GetFileName(path));
-		}
-
-		private void LogFailedDependencyResolution(ModEntry mod)
-		{
-			Logger.Log($"Failed to resolve dependencies for mod `{mod.ModMetadata.Name}`.");
-			Logger.Log($"Dependencies for mod `{mod.ModMetadata.Name}`: `{string.Join(", ", mod.ModMetadata.Dependencies.Select(x => x.Name))}`.");
-		}
-
-		private void LogCircularDependency(ModEntry mod)
-		{
-			Logger.Log($"Could not load mod `{mod.ModMetadata.Name}` due to circular dependencies. " +
-				$"Please check your metadata definitions for mods which might mutually depend on one another.");
+			return instantiatedEntries;
 		}
 	}
 }

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using PhoenixPointModLoader.Manager;
+using System;
 using System.Runtime.Serialization;
 
-namespace PhoenixPointModLoader.Manager
+namespace PhoenixPointModLoader.Exceptions
 {
-	[Serializable]
 	internal class ModCircularDependencyException : Exception
 	{
 		private ModMetadata modMetadata;
@@ -18,17 +18,12 @@ namespace PhoenixPointModLoader.Manager
 		}
 
 		public ModCircularDependencyException(ModMetadata modMetadata, ModMetadata dependency)
+			: base($"Circular dependency found between mods " +
+				  $"`{modMetadata.Name} (v{modMetadata.Version})` and " +
+				  $"`{dependency.Name} (v{dependency.Version})`.")
 		{
 			this.modMetadata = modMetadata;
 			this.dependency = dependency;
-		}
-
-		public ModCircularDependencyException(string message, Exception innerException) : base(message, innerException)
-		{
-		}
-
-		protected ModCircularDependencyException(SerializationInfo info, StreamingContext context) : base(info, context)
-		{
 		}
 	}
 }

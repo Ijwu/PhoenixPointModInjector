@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Infrastructure;
 using PhoenixPointModLoader.Manager;
 
 namespace PhoenixPointModLoader
@@ -16,7 +17,8 @@ namespace PhoenixPointModLoader
 		{
 			EnsureFolderSetup();
 			Logger.InitializeLogging(Path.Combine(ModsDirectory, "PPModLoader.log"));
-			ModManager = new ModManager(ModsDirectory, new JsonConfigProvider());
+			SimpleInjector.Container container = CompositionRoot.GetContainer();
+			ModManager = new ModManager(ModsDirectory, new JsonConfigProvider(), new FileSystemModLoader(), container);
 			ModManager.Initialize();
 		}
 

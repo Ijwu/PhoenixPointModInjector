@@ -1,5 +1,6 @@
 ﻿using System;
 using NUnit.Framework;
+using PhoenixPointModLoader.Exceptions;
 using PhoenixPointModLoader.Manager;
 using PhoenixPointModLoader.Tests.Helpers;
 

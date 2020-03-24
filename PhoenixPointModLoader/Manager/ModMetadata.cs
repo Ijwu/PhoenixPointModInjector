@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhoenixPointModLoader.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 

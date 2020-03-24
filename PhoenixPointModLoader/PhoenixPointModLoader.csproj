@@ -55,12 +55,14 @@
   <ItemGroup>
     <Compile Include="Config\IFileConfigProvider.cs" />
     <Compile Include="Config\JsonConfigProvider.cs" />
-    <Compile Include="Manager\ModCircularDependencyException.cs" />
+    <Compile Include="Manager\FileSystemModLoader.cs" />
+    <Compile Include="Exceptions\ModCircularDependencyException.cs" />
+    <Compile Include="Exceptions\ModLoadFailureException.cs" />
+    <Compile Include="Manager\ModManager.cs" />
     <Compile Include="Manager\ModMetadata.cs" />
     <Compile Include="Infrastructure\CompositionRoot.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Manager\ModEntry.cs" />
-    <Compile Include="Manager\ModManager.cs" />
     <Compile Include="Mods\EnableConsoleMod.cs" />
     <Compile Include="Mods\EnableOptionsUIEditingPatch.cs" />
     <Compile Include="IPhoenixPointMod.cs" />

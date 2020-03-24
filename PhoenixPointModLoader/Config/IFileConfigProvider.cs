@@ -8,10 +8,8 @@ namespace PhoenixPointModLoader.Config
 {
 	public interface IFileConfigProvider
 	{
-		string RelativeFilePath { get; set; }
+		T Read<T>(string relativeFilePath);
 
-		T Read<T>();
-
-		bool Write<T>(T config);
+		bool Write<T>(string relativeFilePath, T config);
 	}
 }
