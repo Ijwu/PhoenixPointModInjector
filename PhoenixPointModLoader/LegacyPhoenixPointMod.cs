@@ -7,18 +7,11 @@ namespace PhoenixPointModLoader
 {
     class LegacyPhoenixPointMod : IPhoenixPointMod
     {
-        private Type _modClass;
         private MethodInfo _initMethod;
 
-        public LegacyPhoenixPointMod(Type modClass, MethodInfo initMethod)
+        public LegacyPhoenixPointMod(Type modClass)
         {
-            _modClass = modClass;
-            _initMethod = initMethod;
-        }
-
-        public Type GetModClass()
-        {
-            return _modClass;
+            _initMethod = modClass.GetMethod("Init");
         }
 
         public ModLoadPriority Priority => ModLoadPriority.Normal;
