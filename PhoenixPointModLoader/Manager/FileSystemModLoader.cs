@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace PhoenixPointModLoader.Manager
 {
@@ -11,13 +12,26 @@ namespace PhoenixPointModLoader.Manager
 		public IList<Type> LoadModTypesFromDirectory(string directory)
 		{
 			List<Type> modTypes = new List<Type>();
-			var fileSearch = Directory.EnumerateFiles(directory, ".dll", SearchOption.AllDirectories);
+			var fileSearch = Directory.EnumerateFiles(directory, "*.dll", SearchOption.AllDirectories);
 			foreach (string foundFile in fileSearch)
 			{
-				Assembly loadedFile = Assembly.Load(foundFile);
-				if (IsModTypePresent(loadedFile))
+				try
 				{
-					modTypes.AddRange(GetModTypes(loadedFile));
+					Assembly loadedFile = Assembly.LoadFrom(foundFile);
+					if (IsModTypePresent(loadedFile))
+					{
+						modTypes.AddRange(GetModTypes(loadedFile));
+					}
+				}
+				catch (Exception e)
+				{
+					Logger.Log($"Could not load modfile `{foundFile}`.");
+					Logger.Log(e.ToString());
+					if (e.InnerException != null)
+					{
+						Logger.Log(e.InnerException.ToString());
+					}
+					continue;
 				}
 			}
 			return modTypes;

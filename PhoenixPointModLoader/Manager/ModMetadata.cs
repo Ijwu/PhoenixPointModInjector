@@ -1,4 +1,5 @@
-﻿using PhoenixPointModLoader.Exceptions;
+﻿using Newtonsoft.Json;
+using PhoenixPointModLoader.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace PhoenixPointModLoader.Manager
 
 		public ModMetadata(string name, Version version) : this(name, version, string.Empty) { }
 
+		[JsonConstructor]
 		public ModMetadata(string name, Version version, string description)
 		{
 			Name = name;
@@ -19,22 +21,27 @@ namespace PhoenixPointModLoader.Manager
 			Dependencies = new List<ModMetadata>();
 		}
 
-		public string Name { get; }
-		public string Description { get; }
-		public Version Version { get; }
-
-		public IList<ModMetadata> Dependencies { get; }
+		public string Name { get; private set; }
+		public string Description { get; private set; }
+		public Version Version { get; private set; }
+		public IList<ModMetadata> Dependencies { get; private set; }
 
 		public bool TryResolveDependencies(IList<ModMetadata> modList)
 		{
 			List<ModMetadata> resolvedMods = new List<ModMetadata>();
 			List<ModMetadata> unresolvedMods = new List<ModMetadata>();
 
+			Func<ModMetadata, bool> AreMetadataEqualTo(ModMetadata lhs)
+			{
+				return (rhs) => string.Equals(lhs.Name, rhs.Name) && lhs.Version == rhs.Version;
+			} 
+
+
 			bool ResolveDependenciesForMod(ModMetadata mod)
 			{
 				bool result = false;
 
-				if (!modList.Contains(mod))
+				if (!modList.Any(AreMetadataEqualTo(mod)))
 				{
 					return false;
 				}
@@ -47,9 +54,9 @@ namespace PhoenixPointModLoader.Manager
 				unresolvedMods.Add(mod);
 				foreach (ModMetadata dependency in mod.Dependencies)
 				{
-					if (!resolvedMods.Any(resolved => resolved.Name == dependency.Name && resolved.Version == dependency.Version))
+					if (!resolvedMods.Any(AreMetadataEqualTo(dependency)))
 					{
-						if (unresolvedMods.Any(unresolved => unresolved.Name == dependency.Name && unresolved.Version == dependency.Version))
+						if (unresolvedMods.Any(AreMetadataEqualTo(dependency)))
 						{
 							throw new ModCircularDependencyException(this, dependency);
 						}

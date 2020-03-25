@@ -2,8 +2,8 @@
 {
 	public enum ModLoadPriority
 	{
-		Low,
 		Normal,
+		Low,
 		High
 	}
 }

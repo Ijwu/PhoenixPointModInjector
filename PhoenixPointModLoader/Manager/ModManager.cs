@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace PhoenixPointModLoader.Manager
 {
@@ -27,7 +28,7 @@ namespace PhoenixPointModLoader.Manager
 			_metadataProvider = metadataProvider;
 			_modLoader = modLoader;
 			_container = container;
-		}
+		} 
 
 		public void Initialize()
 		{
@@ -54,12 +55,23 @@ namespace PhoenixPointModLoader.Manager
 			var result = new List<ModEntry>();
 			foreach (Type mod in mods)
 			{
-				ModMetadata metadata = _metadataProvider.Read<ModMetadata>(Path.Combine(mod.Assembly.Location, $"{mod.Name}.json"));
-				if (metadata is null)
+				try
 				{
-					metadata = new ModMetadata(mod.Name, new Version(0,0));
+					string metadataPath = Path.Combine(
+						Path.GetDirectoryName(mod.Assembly.Location), 
+						$"{Path.GetFileNameWithoutExtension(mod.Assembly.Location)}.json");
+					ModMetadata metadata = _metadataProvider.Read<ModMetadata>(metadataPath);
+					if (metadata is null)
+					{
+						metadata = new ModMetadata(mod.FullName, new Version(0, 0));
+					}
+					result.Add(new ModEntry(mod, metadata));
 				}
-				result.Add(new ModEntry(mod, metadata));
+				catch (FileNotFoundException)
+				{
+					ModMetadata metadata = new ModMetadata(mod.FullName, new Version(0, 0));
+					result.Add(new ModEntry(mod, metadata));
+				}
 			}
 			return result;
 		}
@@ -67,11 +79,17 @@ namespace PhoenixPointModLoader.Manager
 		private IList<ModEntry> ResolveDependencies(IList<ModEntry> modsWithMetadata)
 		{
 			List<ModEntry> successfullyResolved = new List<ModEntry>();
-			var dependencyResolutionList = modsWithMetadata.OrderBy(entry => entry.ModMetadata.Dependencies.Count);
+			var dependencyResolutionList = modsWithMetadata.OrderBy(entry => entry.ModMetadata?.Dependencies?.Count);
 			foreach (ModEntry entry in dependencyResolutionList)
 			{
-				IList<ModMetadata> currentlyResolved = successfullyResolved.Select(x => x.ModMetadata).ToList();
-				bool resolved = entry.ModMetadata.TryResolveDependencies(currentlyResolved);
+				if (entry.ModMetadata.Dependencies is null || entry.ModMetadata.Dependencies.Count == 0)
+				{
+					successfullyResolved.Add(entry);
+					continue;
+				}
+				IList<ModMetadata> currentlyResolvedMetadata = successfullyResolved.Select(x => x.ModMetadata).ToList();
+				currentlyResolvedMetadata.Add(entry.ModMetadata);
+				bool resolved = entry.ModMetadata.TryResolveDependencies(currentlyResolvedMetadata);
 				if (resolved)
 				{
 					successfullyResolved.Add(entry);
@@ -79,8 +97,6 @@ namespace PhoenixPointModLoader.Manager
 				else
 				{
 					var dependenciesString = string.Join(", ", entry.ModMetadata.Dependencies.Select(x => $"{x.Name} (v{x.Version})"));
-					Logger.Log($"Failed to resolve dependencies for mod `{entry.ModType.FullName}`.");
-					Logger.Log($"Mod dependencies are as follows: {dependenciesString}");
 				}
 			}
 			return successfullyResolved;
@@ -103,7 +119,8 @@ namespace PhoenixPointModLoader.Manager
 				}
 				catch (Exception e)
 				{
-					Logger.Log(e.Message);
+					Logger.Log($"Mod `{entry.ModMetadata.Name} (v{entry.ModMetadata.Version})` failed to initialize.");
+					Logger.Log($"{e}");
 					continue;
 				}
 			}
