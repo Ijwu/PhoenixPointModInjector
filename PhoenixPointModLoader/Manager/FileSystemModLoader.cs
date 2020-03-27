@@ -11,34 +11,16 @@ namespace PhoenixPointModLoader.Manager
 	{
 		public List<Type> LoadModTypesFromDirectory(string directory)
 		{
-			List<Type> modTypes = new List<Type>();
-			var fileSearch = Directory.EnumerateFiles(directory, "*.dll", SearchOption.AllDirectories);
-			foreach (string foundFile in fileSearch)
-			{
-				try
-				{
-					Assembly loadedFile = Assembly.LoadFrom(foundFile);
-					if (IsModTypePresent(loadedFile))
-					{
-						modTypes.AddRange(GetModTypes(loadedFile));
-					}
-				}
-				catch (Exception e)
-				{
-					Logger.Log($"Could not load modfile `{foundFile}`.");
-					Logger.Log(e.ToString());
-					if (e.InnerException != null)
-					{
-						Logger.Log(e.InnerException.ToString());
-					}
-					continue;
-				}
-			}
-			return modTypes;
+			return FilterTypesInDirectory(directory, IsModType).ToList();
 		}
 
 		public List<Type> LoadLegacyModsFromDirectory(string directory)
 		{
+			return FilterTypesInDirectory(directory, IsLegacyModType).ToList();
+		}
+
+		private static IEnumerable<Type> FilterTypesInDirectory(string directory, Func<Type, bool> predicate)
+		{
 			List<Type> modTypes = new List<Type>();
 			var fileSearch = Directory.EnumerateFiles(directory, "*.dll", SearchOption.AllDirectories);
 			foreach (string foundFile in fileSearch)
@@ -46,43 +28,31 @@ namespace PhoenixPointModLoader.Manager
 				try
 				{
 					Assembly loadedFile = Assembly.LoadFrom(foundFile);
-					if (IsLegacyModPresent(loadedFile))
-					{
-						modTypes.AddRange(GetLegacyModTypes(loadedFile));
-					}
+					modTypes = modTypes.Concat(FilterTypes(loadedFile, predicate)).ToList();
 				}
 				catch (Exception e)
 				{
-					Logger.Log($"Could not load modfile `{foundFile}`.");
+					Logger.Log($"Could not load mod file `{foundFile}`.");
 					Logger.Log(e.ToString());
-					if (e.InnerException != null)
-					{
-						Logger.Log(e.InnerException.ToString());
-					}
 					continue;
 				}
 			}
 			return modTypes;
 		}
 
-		private static IEnumerable<Type> GetModTypes(Assembly asm)
+		private static IEnumerable<Type> FilterTypes(Assembly asm, Func<Type, bool> predicate)
 		{
-			return asm.GetTypes().Where(type => typeof(IPhoenixPointMod).IsAssignableFrom(type));
+			return asm.GetTypes().Where(predicate);
 		}
 
-		private static bool IsModTypePresent(Assembly asm)
+		private static bool IsModType(Type type)
 		{
-			return asm.GetTypes().Any(type => typeof(IPhoenixPointMod).IsAssignableFrom(type));
+			return typeof(IPhoenixPointMod).IsAssignableFrom(type);
 		}
 
-		private static bool IsLegacyModPresent(Assembly asm)
+		private static bool IsLegacyModType(Type type)
 		{
-			return asm.GetTypes().Any(type => type.GetMethod("Init") != null);
-		}
-
-		private static IEnumerable<Type> GetLegacyModTypes(Assembly asm)
-		{
-			return asm.GetTypes().Where(type => type.GetMethod("Init") != null);
+			return type.GetMethod("Init") != null;
 		}
 	}
 }
