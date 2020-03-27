@@ -80,16 +80,12 @@ namespace PhoenixPointModLoader.Manager
 					successfullyResolved.Add(entry);
 					continue;
 				}
-				List<ModMetadata> currentlyResolvedMetadata = successfullyResolved.Select(x => x.ModMetadata).ToList();
-				currentlyResolvedMetadata.Add(entry.ModMetadata);
-				bool resolved = entry.ModMetadata.TryResolveDependencies(currentlyResolvedMetadata);
+				List<ModMetadata> currentlyResolvedMods= successfullyResolved.Select(x => x.ModMetadata).ToList();
+				currentlyResolvedMods.Add(entry.ModMetadata);
+				bool resolved = entry.ModMetadata.TryResolveDependencies(currentlyResolvedMods);
 				if (resolved)
 				{
 					successfullyResolved.Add(entry);
-				}
-				else
-				{
-					var dependenciesString = string.Join(", ", entry.ModMetadata.Dependencies.Select(x => $"{x.Name} (v{x.Version})"));
 				}
 			}
 			return successfullyResolved;
