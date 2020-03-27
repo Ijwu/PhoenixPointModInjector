@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhoenixPointModLoader", "Ph
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhoenixPointModLoaderInjector", "PhoenixPointModLoaderInjector\PhoenixPointModLoaderInjector.csproj", "{3CEBFD62-57BB-47D9-8FEF-7807B56A09D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhoenixPointModLoader.Tests", "PhoenixPointModLoader.Tests\PhoenixPointModLoader.Tests.csproj", "{8B75EE7B-C877-4271-A7D3-12CD9C89D7F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{3CEBFD62-57BB-47D9-8FEF-7807B56A09D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CEBFD62-57BB-47D9-8FEF-7807B56A09D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CEBFD62-57BB-47D9-8FEF-7807B56A09D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B75EE7B-C877-4271-A7D3-12CD9C89D7F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B75EE7B-C877-4271-A7D3-12CD9C89D7F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B75EE7B-C877-4271-A7D3-12CD9C89D7F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B75EE7B-C877-4271-A7D3-12CD9C89D7F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

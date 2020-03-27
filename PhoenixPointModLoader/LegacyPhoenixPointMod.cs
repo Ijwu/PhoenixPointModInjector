@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhoenixPointModLoader.Manager;
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -6,25 +7,19 @@ namespace PhoenixPointModLoader
 {
     class LegacyPhoenixPointMod : IPhoenixPointMod
     {
-        private Type modClass;
-        private MethodInfo initMethod;
+        private MethodInfo _initMethod;
 
-        public LegacyPhoenixPointMod(Type modClass, MethodInfo initMethod)
+        public LegacyPhoenixPointMod(Type modClass)
         {
-            this.modClass = modClass;
-            this.initMethod = initMethod;
-        }
-
-        public Type getModClass()
-        {
-            return this.modClass;
+            _initMethod = modClass.GetMethod("Init");
         }
 
         public ModLoadPriority Priority => ModLoadPriority.Normal;
 
+
         public void Initialize()
         {
-            this.initMethod.Invoke(null, null);
+            _initMethod.Invoke(null, null);
         }
     }
 }

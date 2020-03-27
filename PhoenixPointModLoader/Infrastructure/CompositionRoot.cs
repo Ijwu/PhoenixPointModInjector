@@ -10,10 +10,20 @@ namespace PhoenixPointModLoader.Infrastructure
 {
 	public static class CompositionRoot
 	{
-		public static void ConfigureContainer(Container container)
+		private static Container Container;
+		public static Container GetContainer()
 		{
-			container.Register<IFileConfigProvider, JsonConfigProvider>();
-			container.Verify();
+			if (Container is null)
+			{
+				Container = new Container();
+				Container.Register<IFileConfigProvider, JsonConfigProvider>();
+				Container.Verify();
+				return Container;
+			}
+			else
+			{
+				return Container;
+			}
 		}
 	}
 }
