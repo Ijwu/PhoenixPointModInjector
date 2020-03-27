@@ -1,5 +1,6 @@
 ﻿using Base.Utils.GameConsole;
 using PhoenixPointModLoader.Config;
+using PhoenixPointModLoader.Manager;
 using System.IO;
 
 namespace PhoenixPointModLoader.Mods
@@ -13,7 +14,6 @@ namespace PhoenixPointModLoader.Mods
 
 		public EnableConsoleMod(IFileConfigProvider config)
 		{
-			config.RelativeFilePath = "EnableConsoleAccess.json";
 			configProvider = config;
 		}
 
@@ -21,12 +21,12 @@ namespace PhoenixPointModLoader.Mods
 		{
 			try
 			{
-				consoleAccessConfig = configProvider.Read<EnableConsoleConfig>();
+				consoleAccessConfig = configProvider.Read<EnableConsoleConfig>("EnableConsoleAccess.json");
 			}
 			catch (FileNotFoundException)
 			{
 				consoleAccessConfig = new EnableConsoleConfig() { EnableConsoleAccess = true };
-				configProvider.Write(consoleAccessConfig);
+				configProvider.Write("EnableConsoleAccess.json", consoleAccessConfig);
 			}
 			finally
 			{

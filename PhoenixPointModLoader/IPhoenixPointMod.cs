@@ -1,4 +1,6 @@
-﻿namespace PhoenixPointModLoader
+﻿using PhoenixPointModLoader.Manager;
+
+namespace PhoenixPointModLoader
 {
 	public interface IPhoenixPointMod
 	{

@@ -1,5 +1,6 @@
 ﻿using Base.Utils.GameConsole;
 using Harmony;
+using PhoenixPointModLoader.Manager;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
